@@ -19,7 +19,8 @@ tpar[4,0] = 13; tpar[4,1] = 7; tpar[4,2] = 1;
 tpar[5,0] = 12; tpar[5,1] = 15; tpar[5,2] = 1;
 tpar[6,0] = 10; tpar[6,1] = 0; tpar[6,2] = 1;
 X1 = 32; X2 = 35; X3 = 33;
-X=[X1, X2]
+X=np.zeros([2,1])
+X[0,0]=X1;X[1,0]=X2
 ppar=np.zeros([3,3])
 ppar[0,0]=0.5;  ppar[0,1]=0.2;  ppar[0,2]=0;
 ppar[1,0]=0.5;  ppar[1,1]=0.2;  ppar[1,2]=0;
@@ -30,8 +31,9 @@ Pitch = 135.7;
 DW = 1.5
 I0 = 0.005
 Bk = 33.4
+SPAR=np.zeros([4,1])
+SPAR[0,0]=DW; SPAR[1,0]=I0; SPAR[2,0]=Bk;SPAR[3,0]=Pitch
 
-SPAR = [DW,I0, Bk, Pitch]
 Coord=CD.SCNCoordAssign(tpar,Trapnumber,X1,X2,X3,Pitch)
 SimInt = CD.SCNIntensitySim(Coord,Qx,Qz,Trapnumber,DW,I0,Bk)
 Coordp=CD.SCNParabolaCoord(tpar,ppar,Discretization,Trapnumber, X1, X2, Pitch)
@@ -41,3 +43,14 @@ CD.PlotQzCut(Qz,SimIntp,Intensity,26)
 
 Chi2=CD.Misfit(Intensity,SimInt)
 C=Chi2.sum()
+#%%
+[a, b, c,d,e,f,g,h]=CD.ParBoundSCN(tpar,ppar,SPAR,X)
+
+#%%
+
+MCPAR=np.zeros[4,1]
+MCPAR[0,0] = 10 # Chainnumber
+MCPAR[1,0] = len(FITPAR)
+MCPAR[1,0] = 10 #stepnumber
+MCPAR[2,0] = 0 #randomchains
+

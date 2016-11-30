@@ -242,7 +242,37 @@ def plotIntelShape(tpar,ppar,Disc,Trapnumber,X,Pitch):
     Coord=CD.SCNParabolaCoord(tpar, ppar, Disc, Trapnumber, X[0,0], X[0,1], Pitch)
     Coord[:,:,5]
 
+def ParBoundSCN(tpar,ppar,SPAR,X):
+    XL=X*0.95
+    XU=X*0.95
+    tparL=tpar*0.9
+    tparU=tpar*1.1
+    pparL=ppar*0.5
+    pparU=ppar*2
+    SPARL=SPAR*0.5
+    SPARU=SPAR*2
+    return(tparL,tparU,pparL,pparU,XL,XU,SPARL,SPARU)
+    """
+      c=0;
+    Parnumber=Trapnumber*2+1+9+3+2
+    FITPAR=np.zeros([Parnumber,1])
+    FITPARLB=np.zeros([Parnumber,1])
+    FITPARUB=np.zeros([Parnumber,1])
+    for i in range(Trapnumber-2):
+        c=c+1
+        FITPAR[c,0]=tpar[i,0]
+        FITPARLB[c,0]=tpar[i,0]*0.9
+        FITPARUB[c,0]=tpar[i,0]*1.1
+        c=c+1
+        FITPAR[c,0]=tpar[i,1]
+        FITPARLB[c,0]=tpar[i,1]*0.9
+        FITPARUB[c,0]=tpar[i,1]*1.1
 
+    c=c+1
+    FITPAR[c,0]=tpar[Trapnumber-2,0]
+    FITPARLB[c,0]=tpar[Trapnumber-2,0]*0.9
+    FITPARUB[c,0]=tpar[Trapnumber-2,0]*1.1
+    """
 
 def Misfit(Exp,Sim):
     D= abs(Exp-Sim)
@@ -254,5 +284,5 @@ def Misfit(Exp,Sim):
     Chi2[np.isnan(Chi2)]=0
     return Chi2
     
-    
+def MCMCSeeding(tpar,ppar,SPAR,X,Qx,Qz,Intensity,Disc,Trapnumber,)
         

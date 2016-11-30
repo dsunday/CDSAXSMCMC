@@ -3,18 +3,19 @@
 Functions to be used in analyzing CDSAXS data
 """
 import numpy as np
+import matplotlib.pyplot as plt
+import CDSAXSfunctions as CD
 
-
-def CDSAXSimport(filenameqz,filenameqx,cutnumber):
-    Qz=np.zeros([121,cutnumber])
-    Qx=np.zeros([121,cutnumber])
-    Intensity=np.zeros([121,cutnumber])
+def CDSAXSimport(filenameqz,filenameqx,AngleNumber,cutnumber):
+    Qz=np.zeros([AngleNumber,cutnumber])
+    Qx=np.zeros([AngleNumber,cutnumber])
+    Intensity=np.zeros([AngleNumber,cutnumber])
     dataz=np.loadtxt(filenameqz)
     datax=np.loadtxt(filenameqx)
     for i in range (1,cutnumber+1):
-        Qz[0:121,i-1]=dataz[0:121,i*3-2]
-        Intensity[0:121,i-1]=dataz[0:121,i*3-1]
-    for i in range(121):
+        Qz[0:AngleNumber,i-1]=dataz[0:AngleNumber,i*3-2]
+        Intensity[0:AngleNumber,i-1]=dataz[0:AngleNumber,i*3-1]
+    for i in range(AngleNumber):
         Qx[i,0:cutnumber]=datax
     Qx=Qx*10        
     Qz=Qz*10
@@ -56,7 +57,145 @@ def SCNCoordAssign(tpar,Trapnumber,X1,X2,X3,Pitch):
             Center = (Coord[T,1,3]+Coord[T,0,0]+Pitch)/2
             Coord[T,1,3]= Center; Coord[T,0,0]= Center;
     return Coord
-                
+         
+         
+def SCNParabolaCoord(tpar, ppar, Disc, Trapnumber, X1, X2, Pitch):
+    Height = 0   
+    Coord=np.zeros([Trapnumber+Disc,5,4])
+    for T in range(Disc):
+        # stack 1, part 1
+        Hstep=tpar[0,1]/Disc
+        if T ==0:
+            Coord[T,0,0]=0
+            Coord[T,1,0]=X1
+            Coord[T,2,0]=Hstep
+            Coord[T,3,0]=0
+            Coord[T,4,0]=tpar[0,2]
+        else:
+            if Height < ppar[0,2]:
+                Coord[T,0,0]=0
+            else:
+                Coord[T,0,0]=(-1*ppar[0,1]+np.sqrt(np.power(ppar[0,1],2)-4*ppar[0,0]*(-1*(Height-ppar[0,2]))))/(2*ppar[0,0])
+            if Height < ppar[1,2]:
+                Coord[T,1,0]=X1
+            else:
+                 Coord[T,1,0]=X1-(-1*ppar[1,1]+np.sqrt(np.power(ppar[1,1],2)-4*ppar[1,0]*(-1*(Height-ppar[1,2]))))/(2*ppar[1,0])
+            Coord[T,2,0]=Hstep
+            Coord[T,3,0]=0
+            Coord[T,4,0]=tpar[0,2]
+        # stack 2 part 1
+        if T ==0:
+            Coord[T,0,1]=X1
+            Coord[T,1,1]=X1+X2
+            Coord[T,2,1]=Hstep
+            Coord[T,3,1]=0
+            Coord[T,4,1]=tpar[0,2]
+        else:
+            if Height < ppar[1,2]:
+                Coord[T,0,1]=X1
+            else:
+                Coord[T,0,1]=X1+(-1*ppar[1,1]+np.sqrt(np.power(ppar[1,1],2)-4*ppar[1,0]*(-1*(Height-ppar[1,2]))))/(2*ppar[1,0])
+            if Height < ppar[1,2]:
+                Coord[T,1,1]=X1+X2
+            else:
+                 Coord[T,1,1]=(X1+X2)-(-1*ppar[2,1]+np.sqrt(np.power(ppar[2,1],2)-4*ppar[2,0]*(-1*(Height-ppar[2,2]))))/(2*ppar[2,0])
+            Coord[T,2,1]=Hstep
+            Coord[T,3,1]=0
+            Coord[T,4,1]=tpar[0,2]
+            
+        # stack 3 part 1
+        if T ==0:
+            Coord[T,0,2]=X1+X2
+            Coord[T,1,2]=2*X1+X2
+            Coord[T,2,2]=Hstep
+            Coord[T,3,2]=0
+            Coord[T,4,2]=tpar[0,2]
+        else:
+            if Height < ppar[2,2]:
+                Coord[T,0,2]=X1+X2
+            else:
+                Coord[T,0,2]=(X1+X2)+(-1*ppar[2,1]+np.sqrt(np.power(ppar[2,1],2)-4*ppar[2,0]*(-1*(Height-ppar[2,2]))))/(2*ppar[2,0])
+            if Height < ppar[1,2]:
+                Coord[T,1,2]=2*X1+X2
+            else:
+                 Coord[T,1,2]=(2*X1+X2)-(-1*ppar[1,1]+np.sqrt(np.power(ppar[1,1],2)-4*ppar[1,0]*(-1*(Height-ppar[1,2]))))/(2*ppar[1,0])
+            Coord[T,2,2]=Hstep
+            Coord[T,3,2]=0
+            Coord[T,4,2]=tpar[0,2]
+            
+             # stack 4 part 1
+        if T ==0:
+            Coord[T,0,3]=2*X1+X2
+            Coord[T,1,3]=Pitch
+            Coord[T,2,3]=Hstep
+            Coord[T,3,3]=0
+            Coord[T,4,3]=tpar[0,2]
+        else:
+            if Height < ppar[2,2]:
+                Coord[T,0,3]=2*X1+X2
+            else:
+                Coord[T,0,3]=(2*X1+X2)+(-1*ppar[1,1]+np.sqrt(np.power(ppar[1,1],2)-4*ppar[1,0]*(-1*(Height-ppar[1,2]))))/(2*ppar[1,0])
+            if Height < ppar[1,2]:
+                Coord[T,1,3]=Pitch
+            else:
+                 Coord[T,1,3]=Pitch-(-1*ppar[0,1]+np.sqrt(np.power(ppar[0,1],2)-4*ppar[0,0]*(-1*(Height-ppar[0,2]))))/(2*ppar[0,0])
+            Coord[T,2,3]=Hstep
+            Coord[T,3,3]=0
+            Coord[T,4,3]=tpar[0,2]
+        Height=Height+Hstep
+    for T in range(1,Trapnumber+1):
+        if T==1:
+            Coord[Disc,0,0]=(-1*ppar[0,1]+np.sqrt(np.power(ppar[0,1],2)-4*ppar[0,0]*(-1*(tpar[0,1]-ppar[0,2]))))/(2*ppar[0,0])
+            Coord[Disc,1,0]=X1-(-1*ppar[1,1]+np.sqrt(np.power(ppar[1,1],2)-4*ppar[1,0]*(-1*(tpar[0,1]-ppar[1,2]))))/(2*ppar[1,0])
+            Coord[Disc,2,0]=tpar[T,1]
+            Coord[Disc,3,0]=0
+            Coord[Disc,4,0]=tpar[T,2]
+            
+            Coord[Disc,0,1]=X1+(-1*ppar[1,1]+np.sqrt(np.power(ppar[1,1],2)-4*ppar[1,0]*(-1*(tpar[0,1]-ppar[1,2]))))/(2*ppar[1,0])
+            Coord[Disc,1,1]=(X1+X2)-(-1*ppar[2,1]+np.sqrt(np.power(ppar[2,1],2)-4*ppar[2,0]*(-1*(tpar[0,1]-ppar[2,2]))))/(2*ppar[2,0])
+            Coord[Disc,2,1]=tpar[T,1]
+            Coord[Disc,3,1]=0
+            Coord[Disc,4,1]=tpar[T,2]
+            
+            Coord[Disc,0,2]=(X1+X2)+(-1*ppar[2,1]+np.sqrt(np.power(ppar[2,1],2)-4*ppar[2,0]*(-1*(tpar[0,1]-ppar[2,2]))))/(2*ppar[2,0])
+            Coord[Disc,1,2]=(2*X1+X2)-(-1*ppar[1,1]+np.sqrt(np.power(ppar[1,1],2)-4*ppar[1,0]*(-1*(tpar[0,1]-ppar[1,2]))))/(2*ppar[1,0])
+            Coord[Disc,2,2]=tpar[T,1]
+            Coord[Disc,3,2]=0
+            Coord[Disc,4,2]=tpar[T,2]
+            
+            Coord[Disc,0,3]=(2*X1+X2)+(-1*ppar[1,1]+np.sqrt(np.power(ppar[1,1],2)-4*ppar[1,0]*(-1*(tpar[0,1]-ppar[1,2]))))/(2*ppar[1,0])
+            Coord[Disc,1,3]=(Pitch)-(-1*ppar[0,1]+np.sqrt(np.power(ppar[0,1],2)-4*ppar[0,0]*(-1*(tpar[0,1]-ppar[0,2]))))/(2*ppar[0,0])
+            Coord[Disc,2,3]=tpar[T,1]
+            Coord[Disc,3,3]=0
+            Coord[Disc,4,3]=tpar[T,2]
+        else:
+            Coord[Disc+T-1,0,0]=Coord[Disc+T-2,0,0]+0.5*((Coord[Disc+T-2,1,0]-Coord[Disc+T-2,0,0])-tpar[T,0])
+            Coord[Disc+T-1,1,0]=Coord[Disc+T-1,0,0]+tpar[T,0]
+            Coord[Disc+T-1,2,0]=tpar[T,1]
+            Coord[Disc+T-1,3,0]=0;
+            Coord[Disc+T-1,4,0]=tpar[T,2]
+            
+            Coord[Disc+T-1,0,1]=Coord[Disc+T-2,0,1]+0.5*((Coord[Disc+T-2,1,1]-Coord[Disc+T-2,0,1])-tpar[T,0])
+            Coord[Disc+T-1,1,1]=Coord[Disc+T-1,0,1]+tpar[T,0]
+            Coord[Disc+T-1,2,1]=tpar[T,1]
+            Coord[Disc+T-1,3,1]=0;
+            Coord[Disc+T-1,4,1]=tpar[T,2]
+            
+            Coord[Disc+T-1,0,2]=Coord[Disc+T-2,0,2]+0.5*((Coord[Disc+T-2,1,2]-Coord[Disc+T-2,0,2])-tpar[T,0])
+            Coord[Disc+T-1,1,2]=Coord[Disc+T-1,0,2]+tpar[T,0]
+            Coord[Disc+T-1,2,2]=tpar[T,1]
+            Coord[Disc+T-1,3,2]=0;
+            Coord[Disc+T-1,4,2]=tpar[T,2]
+            
+            Coord[Disc+T-1,0,3]=Coord[Disc+T-2,0,3]+0.5*((Coord[Disc+T-2,1,3]-Coord[Disc+T-2,0,3])-tpar[T,0])
+            Coord[Disc+T-1,1,3]=Coord[Disc+T-1,0,3]+tpar[T,0]
+            Coord[Disc+T-1,2,3]=tpar[T,1]
+            Coord[Disc+T-1,3,3]=0;
+            Coord[Disc+T-1,4,3]=tpar[T,2]
+    return Coord
+   
+            
+                        
 def FreeFormTrapezoid(Coord,Qx,Qz,Trapnumber):
     H1 = Coord[0,3]
     H2 = Coord[0,3]
@@ -88,14 +227,31 @@ def SCNIntensitySim(Coord,Qx,Qz,Trapnumber,DW,I0,Bk):
     SimInt = np.power(abs(Formfactor),2)*I0+Bk
     return SimInt
     
-    
+def PlotQzCut(Qz,SimInt,ExpI,numbercuts):
+    for i in range(1,numbercuts):
+        IMin=np.min(ExpI[:,i-1])
+        IMax=np.max(ExpI[:,i])
+        R=2*IMax/IMin
+        SimInt[:,i]=SimInt[:,i]/R
+        ExpI[:,i]=ExpI[:,i]/R
+    for i in range(numbercuts):
+        plt.semilogy(Qz[:,i],ExpI[:,i],'.')
+        plt.semilogy(Qz[:,i],SimInt[:,i])
+        
+def plotIntelShape(tpar,ppar,Disc,Trapnumber,X,Pitch):
+    Coord=CD.SCNParabolaCoord(tpar, ppar, Disc, Trapnumber, X[0,0], X[0,1], Pitch)
+    Coord[:,:,5]
+
+
+
 def Misfit(Exp,Sim):
     D= abs(Exp-Sim)
-    ms=np.zeros([len(Exp[:,1]),len(Exp[1,:])])
+    ms=np.zeros([len(Exp[:,1]),len(Exp[1,:]),2])
     ms[:,:,0]=Sim
     ms[:,:,1]=Exp
     MS= np.nanmin(ms,2)
     Chi2=np.power((D/MS),2)
+    Chi2[np.isnan(Chi2)]=0
     return Chi2
     
     

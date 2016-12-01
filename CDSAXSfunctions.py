@@ -5,6 +5,7 @@ Functions to be used in analyzing CDSAXS data
 import numpy as np
 import matplotlib.pyplot as plt
 import CDSAXSfunctions as CD
+from scipy.interpolate import interp1d
 
 def CDSAXSimport(filenameqz,filenameqx,AngleNumber,cutnumber):
     Qz=np.zeros([AngleNumber,cutnumber])
@@ -284,5 +285,126 @@ def Misfit(Exp,Sim):
     Chi2[np.isnan(Chi2)]=0
     return Chi2
     
-def MCMCSeeding(tpar,ppar,SPAR,X,Qx,Qz,Intensity,Disc,Trapnumber,)
+def PSPVPCoord(tpar,Spline,MCoord,Trapnumber, Disc,Pitch, Offset):
+    Coord=np.zeros([Disc+2,5,8])
+    Coord[0,0,0]=0
+    Coord[0,1,0]=Offset[0,0]
+    
+    Coord[0,0,1]= Coord[0,1,0]
+    Coord[0,1,1]= Coord[0,0,1]+Offset[1,0]
+    
+    Coord[0,0,2]= Coord[0,1,1]
+    Coord[0,1,2]=Coord[0,0,2]+Offset[2,0]
+    
+    Coord[0,0,3]= Coord[0,1,2]
+    Coord[0,1,3]=Coord[0,0,3]+Offset[3,0]
+    
+    Coord[0,0,4]= Coord[0,1,3]
+    Coord[0,1,4]=Coord[0,0,4]+Offset[4,0]
+    
+    Coord[0,0,5]= Coord[0,1,4]
+    Coord[0,1,5]=Coord[0,0,5]+Offset[5,0]
+    
+    Coord[0,0,6]= Coord[0,1,5]
+    Coord[0,1,6]=Coord[0,0,6]+Offset[6,0]
+    
+    Coord[0,0,7]= Coord[0,1,6]
+    Coord[0,1,7]=Coord[0,0,0]+Pitch
+    
+    # calculates spline points for PS LIne over Template   
+    SX1=Coord[0,0,0]+Spline[:,1]
+    SX2=Coord[0,1,0]-Spline[:,1]
+    SY2=Spline[:,0]
+    xx = np.arange(0,Spline[Trapnumber-1,0],Spline[Trapnumber-1,0]/(Disc+1))
+    SR1 = interp1d(SY2,SX2,kind='cubic')
+    R1 = SR1(xx)
+    SL1 = interp1d(SY2,SX1,kind='cubic')
+    L1 = SL1(xx)
+    
+    for i in range(Disc+1):
+        Coord[i,0,0]=L1[i]
+        Coord[i,1,0]=R1[i]
+        Coord[i,2,0]=xx[1]
+        Coord[i,4,0]=MCoord[i,0]
+    # Calculates Spline poitns for PS Line 2
+    SX3=Coord[0,0,2]+Spline[:,2]
+    SX4=Coord[0,1,2]-Spline[:,3]
+
+    SR2 = interp1d(SY2,SX3,kind='cubic')
+    R2 = SR2(xx)
+    SL2 = interp1d(SY2,SX4,kind='cubic')
+    L2 = SL2(xx)
+    
+    for i in range(Disc+1):
+        Coord[i,0,2]=R2[i]
+        Coord[i,1,2]=L2[i]
+        Coord[i,2,2]=xx[1]
+        Coord[i,4,2]=MCoord[i,2]
+    
+    # Calculates Spline poitns for PS Line 3
+    SX5=Coord[0,0,4]+Spline[:,4]
+    SX6=Coord[0,1,4]-Spline[:,4]
+
+    SR3 = interp1d(SY2,SX5,kind='cubic')
+    R3 = SR3(xx)
+    SL3 = interp1d(SY2,SX6,kind='cubic')
+    L3 = SL3(xx)
+    
+    for i in range(Disc+1):
+        Coord[i,0,4]=R3[i]
+        Coord[i,1,4]=L3[i]
+        Coord[i,2,4]=xx[1]
+        Coord[i,4,4]=MCoord[i,4]
+    
+    # Calculates Spline poitns for PS Line 4
+    SX7=Coord[0,0,6]+Spline[:,3]
+    SX8=Coord[0,1,6]-Spline[:,2]
+
+    SR4 = interp1d(SY2,SX7,kind='cubic')
+    R4 = SR4(xx)
+    SL4 = interp1d(SY2,SX8,kind='cubic')
+    L4 = SL4(xx)
+    
+    for i in range(Disc+1):
+        Coord[i,0,6]=R4[i]
+        Coord[i,1,6]=L4[i]
+        Coord[i,2,6]=xx[1]
+        Coord[i,4,6]=MCoord[i,6]
+    
+    S=1
+    for T in range(Disc+1):
+        Coord[T,0,S]=Coord[T,1,S-1]
+        Coord[T,1,S]=Coord[T,0,S+1]
+        Coord[T,2,S]=xx[1]
+        Coord[T,4,S]=MCoord[T,S-1]
+        
+    S=3
+    for T in range(Disc+1):
+        Coord[T,0,S]=Coord[T,1,S-1]
+        Coord[T,1,S]=Coord[T,0,S+1]
+        Coord[T,2,S]=xx[1]
+        Coord[T,4,S]=MCoord[T,S-1]
+        
+    S=5
+    for T in range(Disc+1):
+        Coord[T,0,S]=Coord[T,1,S-1]
+        Coord[T,1,S]=Coord[T,0,S+1]
+        Coord[T,2,S]=xx[1]
+        Coord[T,4,S]=MCoord[T,S-1]
+        
+    S=7
+    for T in range(Disc+1):
+        Coord[T,0,S]=Coord[T,1,S-1]
+        Coord[T,1,S]=Pitch+Coord[T,0,0]
+        Coord[T,2,S]=xx[1]
+        Coord[T,4,S]=MCoord[T,S-1]
+    
+    
+    return (Coord)
+    
+    
+    
+
+
+#def MCMCSeeding(tpar,ppar,SPAR,X,Qx,Qz,Intensity,Disc,Trapnumber,)
         

@@ -229,7 +229,7 @@ def SCNIntensitySim(Coord,Qx,Qz,Trapnumber,DW,I0,Bk):
     return SimInt
     
 def PlotQzCut(Qz,SimInt,ExpI,numbercuts):
-    for i in range(1,numbercuts):
+    for i in range(0,numbercuts):
         IMin=np.min(ExpI[:,i-1])
         IMax=np.max(ExpI[:,i])
         R=2*IMax/IMin

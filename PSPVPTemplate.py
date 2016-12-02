@@ -15,11 +15,18 @@ Qx = np.loadtxt('Sat3N_Qx.txt')
 Qz = np.loadtxt('Sat3N_Qz.txt')
 CutLengths=np.loadtxt('Sat3N_CutLength.txt')
 
-Trapnumber=5
-Discretization=18
+Trapnumber = 5
+Disc=18
+
+DW = 1.5
+I0 = 0.005
+Bk = 33.4
+Pitch = 84
+SPAR=np.zeros([4]) 
+SPAR[0]=DW; SPAR[1]=I0; SPAR[2]=Bk;SPAR[3]=Pitch;
 
 Spline=np.zeros([Trapnumber,5])
-Pitch = 84 
+
 Offset = np.zeros([7,1])
 Offset[0,0]=20
 Offset[1,0]=5
@@ -36,5 +43,68 @@ Spline[3,0]=21;  Spline[3,1]=3; Spline[3,2]=-1; Spline[3,3]=-0.5; Spline[3,4]=-1
 Spline[4,0]=24;  Spline[4,1]=3; Spline[4,2]=-1; Spline[4,3]=-0.5; Spline[4,4]=-1;
 
 MCoord=np.loadtxt('MCOORDPSPVP1.txt')
-(Coord)= CD.PSPVPCoord(20,Spline,MCoord,Trapnumber, Discretization,Pitch, Offset)
-# Define spline parameters
+(Coord)= CD.PSPVPCoord(Spline,MCoord,Trapnumber, Disc,Pitch, Offset)
+
+(FITPAR,FITPARLB,FITPARUB)=CD.PSPVP_PB(Offset,Spline,SPAR,Trapnumber,Disc)
+
+
+#%%
+MCPAR=np.zeros([6])
+MCPAR[0] = 10 # Chainnumber
+MCPAR[1] = len(FITPAR)
+MCPAR[2] = 10 #stepnumber
+MCPAR[3] = 0 #randomchains
+MCPAR[4] = 400 # stepbase
+MCPAR[5] = 200 # steplength
+
+
+def SimInt_PSPVP(FITPAR):
+    T=FITPAR[len(FITPAR)-3]
+    Disc=FITPAR[len(FITPAR)-2]
+    Pitch=FITPAR[len(FITPAR)-4]
+    Spline=np.reshape(FITPAR[0:T*5],(T,5))
+    Offset=FITPAR[T*5:T*5+7]
+    SPAR=FITPAR[T*5+7:T*5+11]
+    Coord=CD.PSPVPCoord(Spline,MCoord,Trapnumber, Disc,Pitch, Offset)
+    F1 = CD.FreeFormTrapezoid(Coord[:,:,0],Qx,Qz,Disc+1)
+    F2 = CD.FreeFormTrapezoid(Coord[:,:,1],Qx,Qz,Disc+1)
+    F3 = CD.FreeFormTrapezoid(Coord[:,:,2],Qx,Qz,Disc+1)
+    F4 = CD.FreeFormTrapezoid(Coord[:,:,3],Qx,Qz,Disc+1)
+    F5 = CD.FreeFormTrapezoid(Coord[:,:,4],Qx,Qz,Disc+1)
+    F6 = CD.FreeFormTrapezoid(Coord[:,:,5],Qx,Qz,Disc+1)
+    F7 = CD.FreeFormTrapezoid(Coord[:,:,6],Qx,Qz,Disc+1)
+    F8 = CD.FreeFormTrapezoid(Coord[:,:,7],Qx,Qz,Disc+1)    
+    Formfactor=(F1+F2+F3+F4+F5+F6+F7+F8)
+    M=np.power(np.exp(-1*(np.power(Qx,2)+np.power(Qz,2))*np.power(SPAR[0],2)),0.5);
+    Formfactor=Formfactor*M
+    SimInt = np.power(abs(Formfactor),2)*SPAR[1]+SPAR[2]
+    return SimInt
+
+def MCMCInit_PSPVP(FITPAR,FITPARLB,FITPARUB,MCPAR):
+    
+    MCMCInit=np.zeros([10,int(MCPAR[1])+1])
+    
+    for i in range(int(MCPAR[0])):
+        if i <MCPAR[3]: #reversed from matlab code assigns all chains below randomnumber as random chains
+            for c in range(int(MCPAR[1])-3):
+                MCMCInit[i,c]=FITPARLB[c]+(FITPARUB[c]-FITPARLB[c])*np.random.random_sample()
+            MCMCInit[i,int(MCPAR[1])-3:int(MCPAR[1])]=FITPAR[int(MCPAR[1])-3:int(MCPAR[1])]
+            SimInt=SimInt_PSPVP(MCMCInit[i,:])
+            
+            MCMCInit[i,int(MCPAR[1])]=CD.Misfit(Intensity,SimInt)
+            
+        else:
+            MCMCInit[i,0:int(MCPAR[1])]=FITPAR
+            SimInt=SimInt_PSPVP(MCMCInit[i,:])
+            MCMCInit[i,int(MCPAR[1])]=CD.Misfit(Intensity,SimInt)
+           
+    return MCMCInit
+
+
+MCMCInit=MCMCInit_PSPVP(FITPAR,FITPARLB,FITPARUB,MCPAR)
+
+
+
+
+    
+    

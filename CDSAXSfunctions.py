@@ -201,7 +201,7 @@ def FreeFormTrapezoid(Coord,Qx,Qz,Trapnumber):
     H1 = Coord[0,3]
     H2 = Coord[0,3]
     form=np.zeros([len(Qx[:,1]),len(Qx[1,:])])
-    for i in range(Trapnumber):
+    for i in range(int(Trapnumber)):
         H2 = H2+Coord[i,2];
         if i > 0:
             H1 = H1+Coord[i-1,2]
@@ -285,28 +285,28 @@ def Misfit(Exp,Sim):
     Chi2[np.isnan(Chi2)]=0
     return Chi2
     
-def PSPVPCoord(tpar,Spline,MCoord,Trapnumber, Disc,Pitch, Offset):
+def PSPVPCoord(Spline,MCoord,Trapnumber, Disc,Pitch, Offset):
     Coord=np.zeros([Disc+2,5,8])
     Coord[0,0,0]=0
-    Coord[0,1,0]=Offset[0,0]
+    Coord[0,1,0]=Offset[0]
     
     Coord[0,0,1]= Coord[0,1,0]
-    Coord[0,1,1]= Coord[0,0,1]+Offset[1,0]
+    Coord[0,1,1]= Coord[0,0,1]+Offset[1]
     
     Coord[0,0,2]= Coord[0,1,1]
-    Coord[0,1,2]=Coord[0,0,2]+Offset[2,0]
+    Coord[0,1,2]=Coord[0,0,2]+Offset[2]
     
     Coord[0,0,3]= Coord[0,1,2]
-    Coord[0,1,3]=Coord[0,0,3]+Offset[3,0]
+    Coord[0,1,3]=Coord[0,0,3]+Offset[3]
     
     Coord[0,0,4]= Coord[0,1,3]
-    Coord[0,1,4]=Coord[0,0,4]+Offset[4,0]
+    Coord[0,1,4]=Coord[0,0,4]+Offset[4]
     
     Coord[0,0,5]= Coord[0,1,4]
-    Coord[0,1,5]=Coord[0,0,5]+Offset[5,0]
+    Coord[0,1,5]=Coord[0,0,5]+Offset[5]
     
     Coord[0,0,6]= Coord[0,1,5]
-    Coord[0,1,6]=Coord[0,0,6]+Offset[6,0]
+    Coord[0,1,6]=Coord[0,0,6]+Offset[6]
     
     Coord[0,0,7]= Coord[0,1,6]
     Coord[0,1,7]=Coord[0,0,0]+Pitch
@@ -321,7 +321,7 @@ def PSPVPCoord(tpar,Spline,MCoord,Trapnumber, Disc,Pitch, Offset):
     SL1 = interp1d(SY2,SX1,kind='cubic')
     L1 = SL1(xx)
     
-    for i in range(Disc+1):
+    for i in range(int(Disc)+1):
         Coord[i,0,0]=L1[i]
         Coord[i,1,0]=R1[i]
         Coord[i,2,0]=xx[1]
@@ -335,7 +335,7 @@ def PSPVPCoord(tpar,Spline,MCoord,Trapnumber, Disc,Pitch, Offset):
     SL2 = interp1d(SY2,SX4,kind='cubic')
     L2 = SL2(xx)
     
-    for i in range(Disc+1):
+    for i in range(int(Disc)+1):
         Coord[i,0,2]=R2[i]
         Coord[i,1,2]=L2[i]
         Coord[i,2,2]=xx[1]
@@ -350,7 +350,7 @@ def PSPVPCoord(tpar,Spline,MCoord,Trapnumber, Disc,Pitch, Offset):
     SL3 = interp1d(SY2,SX6,kind='cubic')
     L3 = SL3(xx)
     
-    for i in range(Disc+1):
+    for i in range(int(Disc)+1):
         Coord[i,0,4]=R3[i]
         Coord[i,1,4]=L3[i]
         Coord[i,2,4]=xx[1]
@@ -365,35 +365,35 @@ def PSPVPCoord(tpar,Spline,MCoord,Trapnumber, Disc,Pitch, Offset):
     SL4 = interp1d(SY2,SX8,kind='cubic')
     L4 = SL4(xx)
     
-    for i in range(Disc+1):
+    for i in range(int(Disc)+1):
         Coord[i,0,6]=R4[i]
         Coord[i,1,6]=L4[i]
         Coord[i,2,6]=xx[1]
         Coord[i,4,6]=MCoord[i,6]
     
     S=1
-    for T in range(Disc+1):
+    for T in range(int(Disc)+1):
         Coord[T,0,S]=Coord[T,1,S-1]
         Coord[T,1,S]=Coord[T,0,S+1]
         Coord[T,2,S]=xx[1]
         Coord[T,4,S]=MCoord[T,S-1]
         
     S=3
-    for T in range(Disc+1):
+    for T in range(int(Disc)+1):
         Coord[T,0,S]=Coord[T,1,S-1]
         Coord[T,1,S]=Coord[T,0,S+1]
         Coord[T,2,S]=xx[1]
         Coord[T,4,S]=MCoord[T,S-1]
         
     S=5
-    for T in range(Disc+1):
+    for T in range(int(Disc)+1):
         Coord[T,0,S]=Coord[T,1,S-1]
         Coord[T,1,S]=Coord[T,0,S+1]
         Coord[T,2,S]=xx[1]
         Coord[T,4,S]=MCoord[T,S-1]
         
     S=7
-    for T in range(Disc+1):
+    for T in range(int(Disc)+1):
         Coord[T,0,S]=Coord[T,1,S-1]
         Coord[T,1,S]=Pitch+Coord[T,0,0]
         Coord[T,2,S]=xx[1]
@@ -402,9 +402,43 @@ def PSPVPCoord(tpar,Spline,MCoord,Trapnumber, Disc,Pitch, Offset):
     
     return (Coord)
     
+def PSPVP_PB(Offset, Spline,SPAR,Trapnumber,Disc):
+     
+    SplineLB=Spline-1
+    SplineUB=Spline+1
     
+    OffsetLB=Offset-1
+    OffsetUB=Offset+1
+    SPARLB=SPAR[0:3]*0.8
+    SPARUB=SPAR[0:3]*1.2
+
+    FITPAR1=Spline.ravel();FITPAR2=Offset.ravel();
+    FITPAR= np.append(FITPAR1,FITPAR2)
+    FITPAR=np.append(FITPAR,SPAR)
+    FITPAR=np.append(FITPAR,Trapnumber)
+    FITPAR=np.append(FITPAR,Disc)
+    
+    
+    FITPARLB=np.append(SplineLB.ravel(),OffsetLB.ravel())
+    FITPARLB[0]=0
+    FITPARLB=np.append(FITPARLB,SPARLB)
+
+    FITPARUB=np.append(SplineUB.ravel(),OffsetUB.ravel())
+    FITPARUB=np.append(FITPARUB,SPARUB)    
+    
+    return (FITPAR,FITPARLB,FITPARUB)
     
 
+    """   
+def MCMCInit_PSPVP(FITPAR,FITPARLB,FITPARUB,MCPAR):
+    
+    MCMCInit=np.zeros([10,int(MCPAR[1])+1])
+    
+    C=int(MCPAR[0])
+    for i in range(C):
+        MCMCInit[i,Trapnumber]=5
+    return MCMCInit
+    """
 
 #def MCMCSeeding(tpar,ppar,SPAR,X,Qx,Qz,Intensity,Disc,Trapnumber,)
         

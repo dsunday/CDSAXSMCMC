@@ -8,6 +8,8 @@ Created on Thu Dec  1 08:55:11 2016
 import numpy as np
 import CDSAXSfunctions as CD
 import matplotlib.pyplot as plt
+import time
+from multiprocessing import Pool
 
 # Import data
 Intensity=np.loadtxt('Sat3N_Intensity.txt')
@@ -49,20 +51,22 @@ MCoord=np.loadtxt('MCOORDPSPVP1.txt')
 
 
 #%%
-MCPAR=np.zeros([6])
+MCPAR=np.zeros([7])
 MCPAR[0] = 10 # Chainnumber
 MCPAR[1] = len(FITPAR)
-MCPAR[2] = 10 #stepnumber
-MCPAR[3] = 0 #randomchains
-MCPAR[4] = 400 # stepbase
-MCPAR[5] = 200 # steplength
+MCPAR[2] = 5 #stepnumber
+MCPAR[3] = 5 #randomchains
+MCPAR[4] = 2 # Resampleinterval
+MCPAR[5] = 400 # stepbase
+MCPAR[6] = 200 # steplength
 
 
 def SimInt_PSPVP(FITPAR):
-    T=FITPAR[len(FITPAR)-3]
-    Disc=FITPAR[len(FITPAR)-2]
-    Pitch=FITPAR[len(FITPAR)-4]
+    T=int(FITPAR[len(FITPAR)-3])
+    Disc=int(FITPAR[len(FITPAR)-2])
+    Pitch=int(FITPAR[len(FITPAR)-4])
     Spline=np.reshape(FITPAR[0:T*5],(T,5))
+    Spline
     Offset=FITPAR[T*5:T*5+7]
     SPAR=FITPAR[T*5+7:T*5+11]
     Coord=CD.PSPVPCoord(Spline,MCoord,Trapnumber, Disc,Pitch, Offset)
@@ -82,7 +86,7 @@ def SimInt_PSPVP(FITPAR):
 
 def MCMCInit_PSPVP(FITPAR,FITPARLB,FITPARUB,MCPAR):
     
-    MCMCInit=np.zeros([10,int(MCPAR[1])+1])
+    MCMCInit=np.zeros([int(MCPAR[0]),int(MCPAR[1])+1])
     
     for i in range(int(MCPAR[0])):
         if i <MCPAR[3]: #reversed from matlab code assigns all chains below randomnumber as random chains
@@ -90,21 +94,54 @@ def MCMCInit_PSPVP(FITPAR,FITPARLB,FITPARUB,MCPAR):
                 MCMCInit[i,c]=FITPARLB[c]+(FITPARUB[c]-FITPARLB[c])*np.random.random_sample()
             MCMCInit[i,int(MCPAR[1])-3:int(MCPAR[1])]=FITPAR[int(MCPAR[1])-3:int(MCPAR[1])]
             SimInt=SimInt_PSPVP(MCMCInit[i,:])
+            C=np.sum(CD.Misfit(Intensity,SimInt))
             
-            MCMCInit[i,int(MCPAR[1])]=CD.Misfit(Intensity,SimInt)
+            MCMCInit[i,int(MCPAR[1])]=C
             
         else:
             MCMCInit[i,0:int(MCPAR[1])]=FITPAR
             SimInt=SimInt_PSPVP(MCMCInit[i,:])
-            MCMCInit[i,int(MCPAR[1])]=CD.Misfit(Intensity,SimInt)
+            C=np.sum(CD.Misfit(Intensity,SimInt))
+            MCMCInit[i,int(MCPAR[1])]=C
            
     return MCMCInit
 
 
 MCMCInit=MCMCInit_PSPVP(FITPAR,FITPARLB,FITPARUB,MCPAR)
 
+MCMC_List=[0]*int(MCPAR[0])
+for i in range(int(MCPAR[0])):
+    MCMC_List[i]=MCMCInit[i,:]
 
 
-
+def MCMC_PSPVP(MCMCInit):
+    L = int(MCPAR[1])
+    Stepnumber= int(MCPAR[2])
+    #SampleMatrix=np.zeros([Stepnumber,L+1]) 
+    #SampleMatrix[0,:]=MCMCInit
+    #Move = np.zeros([L]-3)
+    #Temp = Move 
+    #Temp = MCMCInit[0:L-3]
+    #ChiPrior = MCMCInit[L+1]
+    #for i in range(Stepnumber):
+    #for p in range(L):
+     #   StepControl = MCPAR[5]+MCPAR[6]*np.random.random_sample()
+      #  Move[p] = (FITPARUB[p]-FITPARLB[p])/StepControl*(np.random.random_sample()-0.5)
     
+    return L
+
+
+
+if __name__ == '__main__':
+    pool = Pool(processes=4)
+    start_time = time.perf_counter()
+    F=pool.map(MCMC_PSPVP,MCMC_List)
+    end_time=time.perf_counter()   
+    print(end_time - start_time)
+
+
+
+
+
+        
     

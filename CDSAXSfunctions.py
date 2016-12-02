@@ -421,11 +421,12 @@ def PSPVP_PB(Offset, Spline,SPAR,Trapnumber,Disc):
     
     FITPARLB=np.append(SplineLB.ravel(),OffsetLB.ravel())
     FITPARLB[0]=0
+    
     FITPARLB=np.append(FITPARLB,SPARLB)
 
     FITPARUB=np.append(SplineUB.ravel(),OffsetUB.ravel())
     FITPARUB=np.append(FITPARUB,SPARUB)    
-    
+    FITPARUB[0]=0
     return (FITPAR,FITPARLB,FITPARUB)
     
 

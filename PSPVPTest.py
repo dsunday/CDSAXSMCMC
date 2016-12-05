@@ -159,4 +159,4 @@ if __name__ == '__main__':
 end_time=time.perf_counter()   
 
 print(F)
-#np.savetxt('Ptest.txt',F,delimiter=',')
+np.savetxt('Ptest.txt',F,delimiter=',')

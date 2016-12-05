@@ -9,7 +9,6 @@ import numpy as np
 import CDSAXSfunctions as CD
 import matplotlib.pyplot as plt
 import time
-from multiprocessing import Process
 from multiprocessing import Pool
 
 
@@ -108,11 +107,11 @@ def MCMCInit_PSPVP(FITPAR,FITPARLB,FITPARUB,MCPAR):
     return MCMCInit
 
 
-MCMCInit=MCMCInit_PSPVP(FITPAR,FITPARLB,FITPARUB,MCPAR)
+MCMCInitial=MCMCInit_PSPVP(FITPAR,FITPARLB,FITPARUB,MCPAR)
 
 MCMC_List=[0]*int(MCPAR[0])
 for i in range(int(MCPAR[0])):
-    MCMC_List[i]=MCMCInit[i,:]
+    MCMC_List[i]=MCMCInitial[i,:]
 
 
 def MCMC_PSPVP(MCMC_List):

@@ -7,7 +7,7 @@ Created on Mon Dec  5 14:48:01 2016
 from multiprocessing import Pool
 import time
 import numpy as np
-
+import scoop.futures
 import CDSAXSfunctions as CD
 M = np.random.rand(2000, 2000)
 n = list(range(1000))
@@ -49,9 +49,9 @@ MCoord=np.loadtxt('MCOORDPSPVP1.txt')
 (FITPAR,FITPARLB,FITPARUB)=CD.PSPVP_PB(Offset,Spline,SPAR,Trapnumber,Disc)
 
 MCPAR=np.zeros([7])
-MCPAR[0] = 2 # Chainnumber
+MCPAR[0] = 4 # Chainnumber
 MCPAR[1] = len(FITPAR)
-MCPAR[2] = 10 #stepnumber
+MCPAR[2] = 500 #stepnumber
 MCPAR[3] = 0 #randomchains
 MCPAR[4] = 1 # Resampleinterval
 MCPAR[5] = 40 # stepbase
@@ -142,12 +142,14 @@ def MCMC_PSPVP(MCMC_List):
                 SampleMatrix[step,:]=SampleMatrix[step-1,:]
                 
     return SampleMatrix
-
-
-
+start_time = time.perf_counter()
 
 if __name__ =='__main__':  
     pool = Pool(processes=2)
-    F=pool.map(MCMC_PSPVP,MCMC_List)
+    F=scoop.futures.map(MCMC_PSPVP,MCMC_List)
+    F=tuple(F)
     np.save('test2',F)
+    end_time=time.perf_counter()   
+    print(end_time-start_time)
+
 

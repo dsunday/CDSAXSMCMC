@@ -3,7 +3,7 @@
 Functions to be used in analyzing CDSAXS data
 """
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import CDSAXSfunctions as CD
 from scipy.interpolate import interp1d
 
@@ -228,20 +228,20 @@ def SCNIntensitySim(Coord,Qx,Qz,Trapnumber,DW,I0,Bk):
     SimInt = np.power(abs(Formfactor),2)*I0+Bk
     return SimInt
     
-def PlotQzCut(Qz,SimInt,ExpI,numbercuts):
-    for i in range(0,numbercuts):
-        IMin=np.min(ExpI[:,i-1])
-        IMax=np.max(ExpI[:,i])
-        R=2*IMax/IMin
-        SimInt[:,i]=SimInt[:,i]/R
-        ExpI[:,i]=ExpI[:,i]/R
-    for i in range(numbercuts):
-        plt.semilogy(Qz[:,i],ExpI[:,i],'.')
-        plt.semilogy(Qz[:,i],SimInt[:,i])
-        
-def plotIntelShape(tpar,ppar,Disc,Trapnumber,X,Pitch):
-    Coord=CD.SCNParabolaCoord(tpar, ppar, Disc, Trapnumber, X[0,0], X[0,1], Pitch)
-    Coord[:,:,5]
+#def PlotQzCut(Qz,SimInt,ExpI,numbercuts):
+#    for i in range(0,numbercuts):
+#        IMin=np.min(ExpI[:,i-1])
+#        IMax=np.max(ExpI[:,i])
+#        R=2*IMax/IMin
+#        SimInt[:,i]=SimInt[:,i]/R
+#        ExpI[:,i]=ExpI[:,i]/R
+#    for i in range(numbercuts):
+#        plt.semilogy(Qz[:,i],ExpI[:,i],'.')
+#        plt.semilogy(Qz[:,i],SimInt[:,i])
+#        
+#def plotIntelShape(tpar,ppar,Disc,Trapnumber,X,Pitch):
+#    Coord=CD.SCNParabolaCoord(tpar, ppar, Disc, Trapnumber, X[0,0], X[0,1], Pitch)
+#    Coord[:,:,5]
 
 def ParBoundSCN(tpar,ppar,SPAR,X):
     XL=X*0.95

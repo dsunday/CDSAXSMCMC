@@ -7,11 +7,10 @@ Created on Thu Dec  1 08:55:11 2016
 # import libraries
 import numpy as np
 import CDSAXSfunctions as CD
-import matplotlib.pyplot as plt
+import scoop.futures
+#import matplotlib.pyplot as plt
 import time
-from multiprocessing import Process
-from multiprocessing import Pool
-
+#from multiprocessing import Pool
 
 # Import data
 Intensity=np.loadtxt('Sat3N_Intensity.txt')
@@ -50,12 +49,12 @@ MCoord=np.loadtxt('MCOORDPSPVP1.txt')
 (Coord)= CD.PSPVPCoord(Spline,MCoord,Trapnumber, Disc,Pitch, Offset)
 (FITPAR,FITPARLB,FITPARUB)=CD.PSPVP_PB(Offset,Spline,SPAR,Trapnumber,Disc)
 
+np.savetxt('test.txt',FITPAR,delimiter=',')
 
-#%%
 MCPAR=np.zeros([7])
 MCPAR[0] = 2 # Chainnumber
 MCPAR[1] = len(FITPAR)
-MCPAR[2] = 10 #stepnumber
+MCPAR[2] = 100 #stepnumber
 MCPAR[3] = 0 #randomchains
 MCPAR[4] = 5 # Resampleinterval
 MCPAR[5] = 40 # stepbase
@@ -110,9 +109,14 @@ def MCMCInit_PSPVP(FITPAR,FITPARLB,FITPARUB,MCPAR):
 
 MCMCInit=MCMCInit_PSPVP(FITPAR,FITPARLB,FITPARUB,MCPAR)
 
+
+  
 MCMC_List=[0]*int(MCPAR[0])
 for i in range(int(MCPAR[0])):
-    MCMC_List[i]=MCMCInit[i,:]
+    MCMC_List[i]=MCMCInit[i,:]    
+  
+
+
 
 
 def MCMC_PSPVP(MCMC_List):
@@ -148,53 +152,11 @@ def MCMC_PSPVP(MCMC_List):
                 SampleMatrix[step,:]=SampleMatrix[step-1,:]
                 
     return SampleMatrix
-
 start_time = time.perf_counter()
-
-F=[0]*int(MCPAR[0])
-for i in range(int(MCPAR[0])):
-    F[i]=MCMC_PSPVP(MCMC_List[i])
-
+if __name__ == '__main__':
+    F=scoop.futures.map(MCMC_PSPVP,MCMC_List)
+    
 end_time=time.perf_counter()   
-print(end_time - start_time)
 
-np.savetxt('FT.txt',F,delimiter=',')
-#if __name__ =='__main__':  
-#    pool = Pool(processes=2)
-#    F=pool.map(MCMC_PSPVP,MCMC_List)
-
-#%%
-
-def SimInt_PSPVP(FITPAR):
-    T=int(FITPAR[len(FITPAR)-3])
-    Disc=int(FITPAR[len(FITPAR)-2])
-    Pitch=int(FITPAR[len(FITPAR)-4])
-    Spline=np.reshape(FITPAR[0:T*5],(T,5))
-    Spline
-    Offset=FITPAR[T*5:T*5+7]
-    SPAR=FITPAR[T*5+7:T*5+11]
-    Coord=CD.PSPVPCoord(Spline,MCoord,Trapnumber, Disc,Pitch, Offset)
-    F1 = CD.FreeFormTrapezoid(Coord[:,:,0],Qx,Qz,Disc+1)
-    F2 = CD.FreeFormTrapezoid(Coord[:,:,1],Qx,Qz,Disc+1)
-    F3 = CD.FreeFormTrapezoid(Coord[:,:,2],Qx,Qz,Disc+1)
-    F4 = CD.FreeFormTrapezoid(Coord[:,:,3],Qx,Qz,Disc+1)
-    F5 = CD.FreeFormTrapezoid(Coord[:,:,4],Qx,Qz,Disc+1)
-    F6 = CD.FreeFormTrapezoid(Coord[:,:,5],Qx,Qz,Disc+1)
-    F7 = CD.FreeFormTrapezoid(Coord[:,:,6],Qx,Qz,Disc+1)
-    F8 = CD.FreeFormTrapezoid(Coord[:,:,7],Qx,Qz,Disc+1)    
-    Formfactor=(F1+F2+F3+F4+F5+F6+F7+F8)
-    M=np.power(np.exp(-1*(np.power(Qx,2)+np.power(Qz,2))*np.power(SPAR[0],2)),0.5);
-    Formfactor=Formfactor*M
-    SimInt = np.power(abs(Formfactor),2)*SPAR[1]+SPAR[2]
-    return SimInt
-    
-(FITPAR,FITPARLB,FITPARUB)=CD.PSPVP_PB(Offset,Spline,SPAR,Trapnumber,Disc)
-
-F2=np.zeros([len(FITPAR)+1])
-F2[0:len(FITPAR)]=FITPAR
-Sim=SimInt_PSPVP(F2)
-C=np.sum(CD.Misfit(Intensity,Sim))
-
-plt.semilogy(Qz[:,4],Intensity[:,4],'.')
-plt.semilogy(Qz[:,4],Sim[:,4])
-    
+print(F)
+#np.savetxt('Ptest.txt',F,delimiter=',')

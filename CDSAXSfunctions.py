@@ -3,7 +3,7 @@
 Functions to be used in analyzing CDSAXS data
 """
 import numpy as np
-#import matplotlib.pyplot as plt
+
 import CDSAXSfunctions as CD
 from scipy.interpolate import interp1d
 
@@ -209,6 +209,10 @@ def FreeFormTrapezoid(Coord,Qx,Qz,Trapnumber):
         x4 = Coord[i,1]
         x2 = Coord[i+1,0]
         x3 = Coord[i+1,1]
+        if x2==x1:
+            x2=x2-0.000001
+        if x4==x3:
+            x4=x4-0.000001
         SL = Coord[i,2]/(x2-x1)
         SR = -Coord[i,2]/(x4-x3)
         
@@ -227,21 +231,6 @@ def SCNIntensitySim(Coord,Qx,Qz,Trapnumber,DW,I0,Bk):
     Formfactor=Formfactor*M
     SimInt = np.power(abs(Formfactor),2)*I0+Bk
     return SimInt
-    
-#def PlotQzCut(Qz,SimInt,ExpI,numbercuts):
-#    for i in range(0,numbercuts):
-#        IMin=np.min(ExpI[:,i-1])
-#        IMax=np.max(ExpI[:,i])
-#        R=2*IMax/IMin
-#        SimInt[:,i]=SimInt[:,i]/R
-#        ExpI[:,i]=ExpI[:,i]/R
-#    for i in range(numbercuts):
-#        plt.semilogy(Qz[:,i],ExpI[:,i],'.')
-#        plt.semilogy(Qz[:,i],SimInt[:,i])
-#        
-#def plotIntelShape(tpar,ppar,Disc,Trapnumber,X,Pitch):
-#    Coord=CD.SCNParabolaCoord(tpar, ppar, Disc, Trapnumber, X[0,0], X[0,1], Pitch)
-#    Coord[:,:,5]
 
 def ParBoundSCN(tpar,ppar,SPAR,X):
     XL=X*0.95
@@ -253,27 +242,7 @@ def ParBoundSCN(tpar,ppar,SPAR,X):
     SPARL=SPAR*0.5
     SPARU=SPAR*2
     return(tparL,tparU,pparL,pparU,XL,XU,SPARL,SPARU)
-    """
-      c=0;
-    Parnumber=Trapnumber*2+1+9+3+2
-    FITPAR=np.zeros([Parnumber,1])
-    FITPARLB=np.zeros([Parnumber,1])
-    FITPARUB=np.zeros([Parnumber,1])
-    for i in range(Trapnumber-2):
-        c=c+1
-        FITPAR[c,0]=tpar[i,0]
-        FITPARLB[c,0]=tpar[i,0]*0.9
-        FITPARUB[c,0]=tpar[i,0]*1.1
-        c=c+1
-        FITPAR[c,0]=tpar[i,1]
-        FITPARLB[c,0]=tpar[i,1]*0.9
-        FITPARUB[c,0]=tpar[i,1]*1.1
-
-    c=c+1
-    FITPAR[c,0]=tpar[Trapnumber-2,0]
-    FITPARLB[c,0]=tpar[Trapnumber-2,0]*0.9
-    FITPARUB[c,0]=tpar[Trapnumber-2,0]*1.1
-    """
+    
 
 def Misfit(Exp,Sim):
     D= abs(Exp-Sim)
@@ -315,13 +284,14 @@ def PSPVPCoord(Spline,MCoord,Trapnumber, Disc,Pitch, Offset):
     SX1=Coord[0,0,0]+Spline[:,1]
     SX2=Coord[0,1,0]-Spline[:,1]
     SY2=Spline[:,0]
-    xx = np.arange(0,Spline[Trapnumber-1,0],Spline[Trapnumber-1,0]/(Disc+1))
+    xx = np.arange(0,Spline[Trapnumber-1,0]+0.01,Spline[Trapnumber-1,0]/(Disc+1))
+    xx[Disc+1]=xx[Disc+1]-0.01 # there is an issue with the interpolation without shifting slightl below the upper limit
     SR1 = interp1d(SY2,SX2,kind='cubic')
     R1 = SR1(xx)
     SL1 = interp1d(SY2,SX1,kind='cubic')
     L1 = SL1(xx)
     
-    for i in range(int(Disc)+1):
+    for i in range(int(Disc)+2):
         Coord[i,0,0]=L1[i]
         Coord[i,1,0]=R1[i]
         Coord[i,2,0]=xx[1]
@@ -335,7 +305,7 @@ def PSPVPCoord(Spline,MCoord,Trapnumber, Disc,Pitch, Offset):
     SL2 = interp1d(SY2,SX4,kind='cubic')
     L2 = SL2(xx)
     
-    for i in range(int(Disc)+1):
+    for i in range(int(Disc)+2):
         Coord[i,0,2]=R2[i]
         Coord[i,1,2]=L2[i]
         Coord[i,2,2]=xx[1]
@@ -350,7 +320,7 @@ def PSPVPCoord(Spline,MCoord,Trapnumber, Disc,Pitch, Offset):
     SL3 = interp1d(SY2,SX6,kind='cubic')
     L3 = SL3(xx)
     
-    for i in range(int(Disc)+1):
+    for i in range(int(Disc)+2):
         Coord[i,0,4]=R3[i]
         Coord[i,1,4]=L3[i]
         Coord[i,2,4]=xx[1]
@@ -365,39 +335,39 @@ def PSPVPCoord(Spline,MCoord,Trapnumber, Disc,Pitch, Offset):
     SL4 = interp1d(SY2,SX8,kind='cubic')
     L4 = SL4(xx)
     
-    for i in range(int(Disc)+1):
+    for i in range(int(Disc)+2):
         Coord[i,0,6]=R4[i]
         Coord[i,1,6]=L4[i]
         Coord[i,2,6]=xx[1]
         Coord[i,4,6]=MCoord[i,6]
     
     S=1
-    for T in range(int(Disc)+1):
+    for T in range(int(Disc)+2):
         Coord[T,0,S]=Coord[T,1,S-1]
         Coord[T,1,S]=Coord[T,0,S+1]
         Coord[T,2,S]=xx[1]
-        Coord[T,4,S]=MCoord[T,S-1]
+        Coord[T,4,S]=MCoord[T,S]
         
     S=3
-    for T in range(int(Disc)+1):
+    for T in range(int(Disc)+2):
         Coord[T,0,S]=Coord[T,1,S-1]
         Coord[T,1,S]=Coord[T,0,S+1]
         Coord[T,2,S]=xx[1]
-        Coord[T,4,S]=MCoord[T,S-1]
+        Coord[T,4,S]=MCoord[T,S]
         
     S=5
-    for T in range(int(Disc)+1):
+    for T in range(int(Disc)+2):
         Coord[T,0,S]=Coord[T,1,S-1]
         Coord[T,1,S]=Coord[T,0,S+1]
         Coord[T,2,S]=xx[1]
-        Coord[T,4,S]=MCoord[T,S-1]
+        Coord[T,4,S]=MCoord[T,S]
         
     S=7
-    for T in range(int(Disc)+1):
+    for T in range(int(Disc)+2):
         Coord[T,0,S]=Coord[T,1,S-1]
         Coord[T,1,S]=Pitch+Coord[T,0,0]
         Coord[T,2,S]=xx[1]
-        Coord[T,4,S]=MCoord[T,S-1]
+        Coord[T,4,S]=MCoord[T,S]
     
     
     return (Coord)
@@ -430,16 +400,7 @@ def PSPVP_PB(Offset, Spline,SPAR,Trapnumber,Disc):
     return (FITPAR,FITPARLB,FITPARUB)
     
 
-    """   
-def MCMCInit_PSPVP(FITPAR,FITPARLB,FITPARUB,MCPAR):
-    
-    MCMCInit=np.zeros([10,int(MCPAR[1])+1])
-    
-    C=int(MCPAR[0])
-    for i in range(C):
-        MCMCInit[i,Trapnumber]=5
-    return MCMCInit
-    """
+   
 
-#def MCMCSeeding(tpar,ppar,SPAR,X,Qx,Qz,Intensity,Disc,Trapnumber,)
+
         

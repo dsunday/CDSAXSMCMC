@@ -49,9 +49,9 @@ MCoord=np.loadtxt('MCOORDPSPVP1.txt')
 (FITPAR,FITPARLB,FITPARUB)=CD.PSPVP_PB(Offset,Spline,SPAR,Trapnumber,Disc)
 
 MCPAR=np.zeros([7])
-MCPAR[0] = 4 # Chainnumber
+MCPAR[0] = 1000 # Chainnumber
 MCPAR[1] = len(FITPAR)
-MCPAR[2] = 500 #stepnumber
+MCPAR[2] = 100 #stepnumber
 MCPAR[3] = 0 #randomchains
 MCPAR[4] = 1 # Resampleinterval
 MCPAR[5] = 40 # stepbase
@@ -63,7 +63,6 @@ def SimInt_PSPVP(FITPAR):
     Disc=int(FITPAR[len(FITPAR)-2])
     Pitch=int(FITPAR[len(FITPAR)-4])
     Spline=np.reshape(FITPAR[0:T*5],(T,5))
-    Spline
     Offset=FITPAR[T*5:T*5+7]
     SPAR=FITPAR[T*5+7:T*5+11]
     Coord=CD.PSPVPCoord(Spline,MCoord,Trapnumber, Disc,Pitch, Offset)
@@ -103,53 +102,75 @@ def MCMCInit_PSPVP(FITPAR,FITPARLB,FITPARUB,MCPAR):
            
     return MCMCInit
 
-
-MCMCInitial=MCMCInit_PSPVP(FITPAR,FITPARLB,FITPARUB,MCPAR)
-
-MCMC_List=[0]*int(MCPAR[0])
-for i in range(int(MCPAR[0])):
-    MCMC_List[i]=MCMCInitial[i,:]
-
-def MCMC_PSPVP(MCMC_List):
-    MCMCInit=MCMC_List
+def MCMCInit_PSPVPUniform(FITPAR,FITPARLB,FITPARUB,MCPAR):
     
-    L = int(MCPAR[1])
-    Stepnumber= int(MCPAR[2])
-        
-    SampleMatrix=np.zeros([Stepnumber,L+1]) 
-    SampleMatrix[0,:]=MCMCInit
-    Move = np.zeros([L+1])
+    MCMCInit=np.zeros([int(MCPAR[0]),int(MCPAR[1])+1])
     
-    ChiPrior = MCMCInit[L]
-    for step in np.arange(1,Stepnumber,1): 
-        Temp = SampleMatrix[step-1,:]
-        for p in range(L-3):
-            StepControl = MCPAR[5]+MCPAR[6]*np.random.random_sample()
-            Move[p] = (FITPARUB[p]-FITPARLB[p])/StepControl*(np.random.random_sample()-0.5) # need out of bounds check
-        Temp=Temp+Move
-        
-        SimPost=SimInt_PSPVP(Temp)
-        ChiPost=np.sum(CD.Misfit(Intensity,SimPost))
-        if ChiPost < ChiPrior:
-            SampleMatrix[step,0:L]=Temp[0:L]
-            SampleMatrix[step,L]=ChiPost
+    for i in range(int(MCPAR[1])-3):
+        if FITPARUB[i]==FITPARLB[i]:
+            MCMCInit[:,i]=FITPAR[i]
         else:
-            MoveProb = np.exp(-0.5*np.power(ChiPost-ChiPrior,2))
-            if np.random.random_sample() < MoveProb:
-                SampleMatrix[step,0:L]=Temp[0:L]
-                SampleMatrix[step,L]=ChiPost
-            else:
-                SampleMatrix[step,:]=SampleMatrix[step-1,:]
-                
-    return SampleMatrix
-start_time = time.perf_counter()
+            A= np.arange(FITPARLB[i],FITPARUB[i]+0.0001,(FITPARUB[i]-FITPARLB[i])/(int(MCPAR[0])-1))
+            R=np.random.rand(int(MCPAR[0]))
+            ind=R.argsort()
+            A=A[ind]
+            MCMCInit[:,i]=A
+    MCMCInit[:,int(MCPAR[1])-3:int(MCPAR[1])]=FITPAR[int(MCPAR[1])-3:int(MCPAR[1])]        
+    
+    for i in range(int(MCPAR[0])):
+       SimInt=SimInt_PSPVP(MCMCInit[i,:])
+       C=np.sum(CD.Misfit(Intensity,SimInt))
+       MCMCInit[i,int(MCPAR[1])]=C
+        
+    return MCMCInit
+    
 
-if __name__ =='__main__':  
-    pool = Pool(processes=2)
-    F=scoop.futures.map(MCMC_PSPVP,MCMC_List)
-    F=tuple(F)
-    np.save('test2',F)
-    end_time=time.perf_counter()   
-    print(end_time-start_time)
+MCMCInitialU=MCMCInit_PSPVPUniform(FITPAR,FITPARLB,FITPARUB,MCPAR)
 
-
+#MCMC_List=[0]*int(MCPAR[0])
+#for i in range(int(MCPAR[0])):
+#    MCMC_List[i]=MCMCInitial[i,:]
+#
+#def MCMC_PSPVP(MCMC_List):
+#    MCMCInit=MCMC_List
+#    
+#    L = int(MCPAR[1])
+#    Stepnumber= int(MCPAR[2])
+#        
+#    SampleMatrix=np.zeros([Stepnumber,L+1]) 
+#    SampleMatrix[0,:]=MCMCInit
+#    Move = np.zeros([L+1])
+#    
+#    ChiPrior = MCMCInit[L]
+#    for step in np.arange(1,Stepnumber,1): 
+#        Temp = SampleMatrix[step-1,:]
+#        for p in range(L-3):
+#            StepControl = MCPAR[5]+MCPAR[6]*np.random.random_sample()
+#            Move[p] = (FITPARUB[p]-FITPARLB[p])/StepControl*(np.random.random_sample()-0.5) # need out of bounds check
+#        Temp=Temp+Move
+#        
+#        SimPost=SimInt_PSPVP(Temp)
+#        ChiPost=np.sum(CD.Misfit(Intensity,SimPost))
+#        if ChiPost < ChiPrior:
+#            SampleMatrix[step,0:L]=Temp[0:L]
+#            SampleMatrix[step,L]=ChiPost
+#        else:
+#            MoveProb = np.exp(-0.5*np.power(ChiPost-ChiPrior,2))
+#            if np.random.random_sample() < MoveProb:
+#                SampleMatrix[step,0:L]=Temp[0:L]
+#                SampleMatrix[step,L]=ChiPost
+#            else:
+#                SampleMatrix[step,:]=SampleMatrix[step-1,:]
+#                
+#    return SampleMatrix
+#start_time = time.perf_counter()
+#
+#if __name__ =='__main__':  
+#    pool = Pool(processes=2)
+#    F=scoop.futures.map(MCMC_PSPVP,MCMC_List)
+#    F=tuple(F)
+#    np.save('test2',F)
+#    end_time=time.perf_counter()   
+#    print(end_time-start_time)
+#
+#

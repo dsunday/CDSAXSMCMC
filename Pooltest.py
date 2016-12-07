@@ -49,9 +49,9 @@ MCoord=np.loadtxt('MCOORDPSPVP1.txt')
 (FITPAR,FITPARLB,FITPARUB)=CD.PSPVP_PB(Offset,Spline,SPAR,Trapnumber,Disc)
 
 MCPAR=np.zeros([7])
-MCPAR[0] = 2 # Chainnumber
+MCPAR[0] = 4 # Chainnumber
 MCPAR[1] = len(FITPAR)
-MCPAR[2] = 10 #stepnumber
+MCPAR[2] = 100 #stepnumber
 MCPAR[3] = 0 #randomchains
 MCPAR[4] = 1 # Resampleinterval
 MCPAR[5] = 40 # stepbase
@@ -126,7 +126,7 @@ def MCMC_PSPVP(MCMC_List):
         for p in range(L-3):
             StepControl = MCPAR[5]+MCPAR[6]*np.random.random_sample()
             Move[p] = (FITPARUB[p]-FITPARLB[p])/StepControl*(np.random.random_sample()-0.5) # need out of bounds check
-        Temp=Temp+Move
+        Temp[0:L-3]=Temp[0:L-3]+Move[0:L-3]
         
         SimPost=SimInt_PSPVP(Temp)
         ChiPost=np.sum(CD.Misfit(Intensity,SimPost))
@@ -145,9 +145,11 @@ def MCMC_PSPVP(MCMC_List):
 
 
 
-
+start_time = time.perf_counter()
 if __name__ =='__main__':  
-    pool = Pool(processes=2)
+    pool = Pool(processes=4)
     F=pool.map(MCMC_PSPVP,MCMC_List)
-    np.save('test2',F)
-
+    F=tuple(F)
+    np.save('Slurmtest',F)
+    end_time=time.perf_counter()   
+    print(end_time-start_time)
